@@ -188,6 +188,7 @@ jobs:
             -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(pwd)/artifacts \
             -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=$(pwd)/artifacts \
             -DBUILD_TESTING=${{ env.BUILD_TESTING }} \
+            -DDISABLE_CPP03_SYNTAX_CHECK=ON
             ${{ env.CMAKE_EXTRA_ARGS }}
       - name: build
         run: |
