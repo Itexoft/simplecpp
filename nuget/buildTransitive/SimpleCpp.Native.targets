@@ -1,0 +1,13 @@
+<Project>
+  <ItemGroup>
+    <_SimpleCpp_NativeLibs Include="$(_SimpleCpp_NativeLibPath)\*" />
+  </ItemGroup>
+
+  <Target Name="CopySimpleCppNativeLibraries" AfterTargets="Build">
+    <Copy SourceFiles="@(_SimpleCpp_NativeLibs)" DestinationFolder="$(OutDir)\$(_SimpleCpp_NativeRelativeLibPath)" SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="CopySimpleCppNativeLibrariesOnPublish" AfterTargets="Publish">
+    <Copy SourceFiles="@(_SimpleCpp_NativeLibs)" DestinationFolder="$(PublishDir)\$(_SimpleCpp_NativeRelativeLibPath)" SkipUnchangedFiles="true" />
+  </Target>
+</Project>
