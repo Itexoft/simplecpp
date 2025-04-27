@@ -154,9 +154,10 @@ jobs:
           - aarch64-linux-gnu
     steps:
       - uses: actions/checkout@v4
-      - uses: goto-bus-stop/setup-zig@v2
+      - uses: mlugg/setup-zig@v1
         with:
           version: 0.12.0
+          use-cache: true
       - name: create-ccc
         run: |
           mkdir -p $HOME/bin
@@ -198,7 +199,7 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob globstar
-          OBJCOPY=/usr/bin/llvm-objcopy-18
+          OBJCOPY=$(command -v llvm-objcopy-18 || command -v llvm-objcopy || command -v objcopy)
           for lib in **/*.so; do
             "$OBJCOPY" --only-keep-debug "$lib" "$lib.debug"
             "$OBJCOPY" --add-gnu-debuglink="$lib.debug" "$lib"
@@ -247,8 +248,9 @@ jobs:
       - name: dsym
         if: env.DEBUG_SYMBOLS == 'true'
         run: |
+          shopt -s nullglob
           for dylib in artifacts/*.dylib; do
-            [ -f "$dylib" ] && dsymutil "$dylib"
+            dsymutil "$dylib"
           done
       - uses: actions/upload-artifact@v4
         with:
