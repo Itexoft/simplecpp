@@ -1,0 +1,26 @@
+<Project>
+	<PropertyGroup>
+		<!-- Define default RIDs based on current platform and architecture -->
+		<_SimpleCpp_Rid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</_SimpleCpp_Rid>
+
+		<!-- Windows detection -->
+		<_SimpleCpp_Rid Condition="'$(_SimpleCpp_Rid)'=='' and '$(OS)'=='Windows_NT' and '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)'=='X64'">win-x64</_SimpleCpp_Rid>
+		<_SimpleCpp_Rid Condition="'$(_SimpleCpp_Rid)'=='' and '$(OS)'=='Windows_NT' and '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)'=='Arm64'">win-arm64</_SimpleCpp_Rid>
+
+		<!-- Linux detection -->
+		<_SimpleCpp_Rid Condition="'$(_SimpleCpp_Rid)'=='' and '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true' and '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)'=='X64'">linux-x64</_SimpleCpp_Rid>
+		<_SimpleCpp_Rid Condition="'$(_SimpleCpp_Rid)'=='' and '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true' and '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)'=='Arm64'">linux-arm64</_SimpleCpp_Rid>
+
+		<!-- macOS detection -->
+		<_SimpleCpp_Rid Condition="'$(_SimpleCpp_Rid)'=='' and '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true' and '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)'=='X64'">osx-x64</_SimpleCpp_Rid>
+		<_SimpleCpp_Rid Condition="'$(_SimpleCpp_Rid)'=='' and '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))' == 'true' and '$([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture)'=='Arm64'">osx-arm64</_SimpleCpp_Rid>
+
+		<!-- Set NativeLibraries path -->
+		<_SimpleCpp_NativeRelativeLibPath>runtimes\$(_SimpleCpp_Rid)\native</_SimpleCpp_NativeRelativeLibPath>
+		<_SimpleCpp_NativeLibPath>$(MSBuildThisFileDirectory)\..\$(_SimpleCpp_NativeRelativeLibPath)</_SimpleCpp_NativeLibPath>
+	</PropertyGroup>
+
+	<Target Name="ValidateSimpleCppRid" BeforeTargets="PrepareForBuild">
+		<Error Condition="'$(_SimpleCpp_Rid)' == ''" Text="Unsupported OS/architecture: automatic RuntimeIdentifier detection failed. Specify a supported RuntimeIdentifier (e.g., win-x64, linux-x64, osx-arm64) in the project or via CLI." />
+	</Target>
+</Project>
