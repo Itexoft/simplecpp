@@ -64,7 +64,8 @@ jobs:
 
       - name: Check version change
         id: version_check
-        continue-on-error: true
+        env:
+          BRANCH_NAME: ${{ github.ref_name }}
         run: |
           if [ ! -f "${{ env.CSPROJ_PATH }}" ]; then
             echo "::error::Project file not found at ${{ env.CSPROJ_PATH }}"
@@ -73,38 +74,41 @@ jobs:
             echo "version_specified=false" >> $GITHUB_OUTPUT
             exit 1
           fi
+
           CURRENT_VERSION=$(grep -o '<Version>.*</Version>' ${{ env.CSPROJ_PATH }} | sed 's/<Version>\(.*\)<\/Version>/\1/')
           if [ -z "$CURRENT_VERSION" ]; then
-            echo "::warning::Version tag not found in csproj file"
-            echo "can_publish=false" >> $GITHUB_OUTPUT
             echo "version_specified=false" >> $GITHUB_OUTPUT
+            echo "can_publish=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           echo "version_specified=true" >> $GITHUB_OUTPUT
           echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
-          if [[ "${{ github.ref_name }}" == "master" || "${{ github.ref_name }}" == "main" ]]; then
-            echo "is_master=true" >> $GITHUB_OUTPUT
-            git fetch origin
-            if ! git ls-remote --exit-code --quiet origin refs/heads/master || ! git cat-file -e origin/master:${{ env.CSPROJ_PATH }} 2>/dev/null; then
-              echo "version_changed=true" >> $GITHUB_OUTPUT
-              echo "can_publish=true" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-            PREV_VERSION=$(git show origin/master:${{ env.CSPROJ_PATH }} 2>/dev/null | grep -o '<Version>.*</Version>' | sed 's/<Version>\(.*\)<\/Version>/\1/' || echo "")
-            if [ -z "$PREV_VERSION" ] || [ "$PREV_VERSION" != "$CURRENT_VERSION" ]; then
-              echo "version_changed=true" >> $GITHUB_OUTPUT
-            else
-              echo "version_changed=false" >> $GITHUB_OUTPUT
-            fi
-            if [ -n "${{ secrets.NUGET_API_KEY }}" ] && [ "$PREV_VERSION" != "$CURRENT_VERSION" ]; then
-              echo "api_key_available=true" >> $GITHUB_OUTPUT
-              echo "can_publish=true" >> $GITHUB_OUTPUT
-            else
-              echo "api_key_available=false" >> $GITHUB_OUTPUT
-              echo "can_publish=false" >> $GITHUB_OUTPUT
-            fi
-          else
+
+          if [ "$BRANCH_NAME" != "master" ]; then
             echo "is_master=false" >> $GITHUB_OUTPUT
+            echo "can_publish=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "is_master=true" >> $GITHUB_OUTPUT
+
+          git fetch --quiet
+          if git cat-file -e HEAD~1:${{ env.CSPROJ_PATH }} 2>/dev/null; then
+            PREV_VERSION=$(git show HEAD~1:${{ env.CSPROJ_PATH }} | grep -o '<Version>.*</Version>' | sed 's/<Version>\(.*\)<\/Version>/\1/')
+          else
+            PREV_VERSION=""
+          fi
+
+          if [ -z "$PREV_VERSION" ] || [ "$PREV_VERSION" != "$CURRENT_VERSION" ]; then
+            echo "version_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "version_changed=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ -n "${{ secrets.NUGET_API_KEY }}" ] && [ "$PREV_VERSION" != "$CURRENT_VERSION" ]; then
+            echo "api_key_available=true" >> $GITHUB_OUTPUT
+            echo "can_publish=true" >> $GITHUB_OUTPUT
+          else
+            echo "api_key_available=false" >> $GITHUB_OUTPUT
             echo "can_publish=false" >> $GITHUB_OUTPUT
           fi
 
