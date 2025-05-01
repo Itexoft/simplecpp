@@ -1,0 +1,43 @@
+name: capi-bundle
+on:
+  workflow_run:
+    workflows: ["nuget-artifacts"]
+    types: [completed]
+
+jobs:
+  bundle:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    env:
+      CAPI_BUNDLE_DIR: capi-bundle
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: _all_artifacts
+
+      - name: assemble
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$CAPI_BUNDLE_DIR"
+          mkdir -p "$root/include"
+          cp -r include/. "$root/include/"
+          find _all_artifacts -name 'compile_commands.json' | while read json; do
+            rid=$(basename "$(dirname "$json")")
+            cp "$json" "$root/${rid}-compile_commands.json"
+            jq -r '.[].file' "$json" | grep -E '\.(h|hpp)$' | while read hdr; do
+              [ -f "$hdr" ] || continue
+              abs=$(realpath "$hdr")
+              rel=${abs#$(pwd)/}
+              mkdir -p "$root/include/$(dirname "$rel")"
+              cp -f "$abs" "$root/include/$rel"
+            done
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capi-bundle
+          path: ${{ env.CAPI_BUNDLE_DIR }}/**
